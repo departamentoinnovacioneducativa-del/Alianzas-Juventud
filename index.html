@@ -2,34 +2,66 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Registro de Alianzas Educativas</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#002366">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        :root { --azul-rey: #002366; --blanco: #ffffff; }
-        body { background-color: var(--azul-rey); color: #333; font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-        .banner { width: 100%; text-align: center; background-color: var(--blanco); padding: 10px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .banner img { max-width: 300px; }
-        .container { background-color: var(--blanco); padding: 30px; border-radius: 8px; margin-top: 20px; width: 90%; max-width: 800px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        :root {
+            --bg-main: #002366; --bg-container: #ffffff;
+            --text-main: #333; --border-color: #ccc;
+            --btn-bg: #002366; --btn-hover: #00184a;
+        }
+        body.dark-mode {
+            --bg-main: #0a1128; --bg-container: #1c2541;
+            --text-main: #f0f4f8; --border-color: #3a506b;
+            --btn-bg: #3a506b; --btn-hover: #5bc0be;
+        }
+        body { background-color: var(--bg-main); color: var(--text-main); font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; transition: 0.3s; }
+        .banner { width: 100%; text-align: center; background-color: var(--bg-container); padding: 10px 0; position: relative; }
+        .banner img { width: 100%; max-width: 350px; height: auto; object-fit: contain; }
+        .theme-toggle { position: absolute; top: 15px; right: 15px; background: transparent; border: 2px solid var(--text-main); color: var(--text-main); border-radius: 5px; cursor: pointer; padding: 5px 10px; width: auto; }
+        .container { background-color: var(--bg-container); padding: 20px; border-radius: 8px; margin-top: 15px; width: 95%; max-width: 800px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box; }
         .hidden { display: none; }
-        input, textarea, button, select { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background-color: var(--azul-rey); color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #00184a; }
-        h2, h3 { text-align: center; color: var(--azul-rey); }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid var(--border-color); background-color: var(--bg-container); color: var(--text-main); box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; background-color: var(--btn-bg); color: white; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background-color: var(--btn-hover); }
+        h2, h3 { text-align: center; color: var(--text-main); }
+        .pdf-container { padding: 15px; border: 1px solid var(--border-color); margin-top: 15px; background: var(--bg-container); }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: var(--azul-rey); color: white; }
-        .pdf-container { padding: 20px; border: 1px solid #ddd; margin-top: 15px; background: #f9f9f9; }
-        hr { border: 1px solid #eee; margin: 30px 0; }
+        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+        th { background-color: var(--btn-bg); color: white; }
+        .scroll-table { overflow-x: auto; }
+        hr { border: 1px solid var(--border-color); margin: 20px 0; }
     </style>
 </head>
 <body>
 
     <div class="banner">
+        <button class="theme-toggle" onclick="toggleTheme()">🌙/☀️</button>
         <img src="alianza.png" alt="Banner de Alianzas">
     </div>
 
-    <!-- LOGIN -->
+    <!-- APP VERSION CONTROL -->
+    <script>
+        const APP_VERSION = '1.0.1';
+        if (localStorage.getItem('app_version') !== APP_VERSION) {
+            caches.keys().then(names => { for (let name of names) caches.delete(name); });
+            localStorage.setItem('app_version', APP_VERSION);
+            location.reload();
+        }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+        if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+    </script>
+
+    <!-- SECCIÓN LOGIN -->
     <div class="container" id="login-section">
         <h2>Acceso al Sistema</h2>
         <form id="loginForm">
@@ -40,68 +72,66 @@
         <p id="loginError" style="color: red; text-align: center;" class="hidden">Credenciales incorrectas.</p>
     </div>
 
-    <!-- ENLACES -->
+    <!-- SECCIÓN ENLACES (Registro) -->
     <div class="container hidden" id="enlaces-section">
         <h2>Registro de Alianza</h2>
         <form id="registroForm">
-            <label>1. Definición de beca-convenio:</label>
-            <textarea id="definicion" rows="3" required></textarea>
-            <label>2. Nombre del o los enlaces:</label>
-            <input type="text" id="enlaces" required>
-            <label>3. Medios de contacto:</label>
-            <input type="text" id="contacto" required>
-            <label>4. Formas de admisión:</label>
-            <textarea id="admision" rows="2" required></textarea>
-            <label>5. URL de inicio del proceso:</label>
-            <input type="url" id="url_inicio" required>
+            <textarea id="definicion" placeholder="1. Definición de beca-convenio" rows="3" required></textarea>
+            <input type="text" id="enlaces" placeholder="2. Nombre del o los enlaces" required>
+            <input type="text" id="contacto" placeholder="3. Medios de contacto" required>
+            <textarea id="admision" placeholder="4. Formas de admisión" rows="2" required></textarea>
+            <input type="url" id="url_inicio" placeholder="5. URL de inicio del proceso" required>
             <button type="submit">Enviar Solicitud</button>
         </form>
-        <p id="registroExito" style="color: green; text-align: center;" class="hidden">¡Enviado con éxito!</p>
-        <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 20px;">Cerrar Sesión</button>
+        <p id="registroExito" style="color: #5bc0be; text-align: center;" class="hidden">¡Enviado con éxito!</p>
+        <button onclick="location.reload()" style="background-color: #d9534f;">Cerrar Sesión</button>
     </div>
 
-    <!-- ADMIN -->
+    <!-- SECCIÓN ADMIN (Panel) -->
     <div class="container hidden" id="admin-section">
         <h2>Panel de Administrador</h2>
         
-        <h3>Visualizar Solicitudes</h3>
-        <select id="select-alianzas" onchange="mostrarAlianza()">
-            <option value="">Selecciona una alianza...</option>
-        </select>
+        <h3>Gestión de Alianzas</h3>
+        <select id="select-alianzas" onchange="mostrarAlianza()"></select>
         
         <div id="pdf-content" class="pdf-container hidden">
-            <h3 id="pdf-titulo" style="margin-top:0;">Detalles de Alianza Educativa</h3>
-            <p><strong>Definición:</strong> <span id="pdf-def"></span></p>
-            <p><strong>Enlaces:</strong> <span id="pdf-enl"></span></p>
-            <p><strong>Contacto:</strong> <span id="pdf-con"></span></p>
-            <p><strong>Admisión:</strong> <span id="pdf-adm"></span></p>
-            <p><strong>URL:</strong> <span id="pdf-url"></span></p>
-            <p><strong>Fecha de registro:</strong> <span id="pdf-fecha"></span></p>
+            <input type="hidden" id="edit-id">
+            <label>Definición:</label> <textarea id="pdf-def" rows="2"></textarea>
+            <label>Enlaces:</label> <input type="text" id="pdf-enl">
+            <label>Contacto:</label> <input type="text" id="pdf-con">
+            <label>Admisión:</label> <textarea id="pdf-adm" rows="2"></textarea>
+            <label>URL:</label> <input type="text" id="pdf-url">
+            <p style="font-size: 0.8em; color: gray;">Registrado: <span id="pdf-fecha"></span></p>
+            <button onclick="guardarEdicionAlianza()" style="background-color: #5bc0be;">Guardar Cambios</button>
+            <button onclick="generarPDF()">Imprimir PDF</button>
         </div>
-        <button id="btn-pdf" class="hidden" onclick="generarPDF()">Imprimir PDF</button>
 
         <hr>
 
-        <h3>Crear Nuevo Usuario</h3>
+        <h3>Gestión de Usuarios</h3>
+        <select id="select-usuarios" onchange="mostrarUsuario()"></select>
         <form id="form-usuario">
+            <input type="hidden" id="edit-user-id">
             <input type="text" id="new-user" placeholder="Nombre de usuario" required>
-            <input type="text" id="new-pass" placeholder="Contraseña" required>
+            <input type="text" id="new-pass" placeholder="Nueva Contraseña" required>
             <select id="new-role" required>
                 <option value="enlace">Enlace</option>
                 <option value="admin">Administrador</option>
             </select>
-            <button type="submit">Crear Usuario</button>
+            <button type="submit" id="btn-user-submit">Crear/Actualizar Usuario</button>
+            <button type="button" onclick="resetUserForm()" style="background-color: gray;">Cancelar Edición</button>
         </form>
         <p id="userMsg" style="text-align: center;"></p>
 
         <hr>
 
         <h3>Historial de Ingresos</h3>
-        <button onclick="cargarLogs()" style="background-color: #5bc0de;">Actualizar Logs</button>
-        <table id="logs-table">
-            <thead><tr><th>Usuario</th><th>Fecha y Hora</th></tr></thead>
-            <tbody></tbody>
-        </table>
+        <div class="scroll-table">
+            <table id="logs-table">
+                <thead><tr><th>Usuario</th><th>Fecha y Hora</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
 
         <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 30px;">Cerrar Sesión</button>
     </div>
@@ -109,144 +139,136 @@
     <script>
         const API_URL = "https://api-alianzas.adrian-camelot32.workers.dev";
         let alianzasData = [];
+        let usuariosData = [];
 
-        // LOGIN
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
             try {
-                const res = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
-                });
+                const res = await fetch(`${API_URL}/login`, { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('login-section').classList.add('hidden');
                     if (data.role === 'admin') {
                         document.getElementById('admin-section').classList.remove('hidden');
-                        cargarAlianzas();
-                        cargarLogs();
+                        cargarAlianzas(); cargarLogs(); cargarUsuarios();
                     } else {
                         document.getElementById('enlaces-section').classList.remove('hidden');
                     }
-                } else {
-                    document.getElementById('loginError').classList.remove('hidden');
-                }
+                } else { document.getElementById('loginError').classList.remove('hidden'); }
             } catch (error) { alert("Error de conexión"); }
         });
 
-        // REGISTRO ENLACES
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const payload = {
-                definicion: document.getElementById('definicion').value,
-                enlaces: document.getElementById('enlaces').value,
-                contacto: document.getElementById('contacto').value,
-                admision: document.getElementById('admision').value,
-                url_inicio: document.getElementById('url_inicio').value
-            };
-            try {
-                const res = await fetch(`${API_URL}/registro`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('registroForm').reset();
-                    document.getElementById('registroExito').classList.remove('hidden');
-                    setTimeout(() => document.getElementById('registroExito').classList.add('hidden'), 3000);
-                }
-            } catch (error) { alert("Error enviando datos"); }
+            const payload = { definicion: document.getElementById('definicion').value, enlaces: document.getElementById('enlaces').value, contacto: document.getElementById('contacto').value, admision: document.getElementById('admision').value, url_inicio: document.getElementById('url_inicio').value };
+            await fetch(`${API_URL}/registro`, { method: 'POST', body: JSON.stringify(payload) });
+            document.getElementById('registroForm').reset();
+            document.getElementById('registroExito').classList.remove('hidden');
+            setTimeout(() => document.getElementById('registroExito').classList.add('hidden'), 3000);
         });
 
-        // ADMIN: CARGAR ALIANZAS
         async function cargarAlianzas() {
-            try {
-                const res = await fetch(`${API_URL}/alianzas`);
-                alianzasData = await res.json();
-                const select = document.getElementById('select-alianzas');
-                select.innerHTML = '<option value="">Selecciona una alianza...</option>';
-                alianzasData.forEach(a => {
-                    const opt = document.createElement('option');
-                    opt.value = a.id;
-                    opt.textContent = `${a.enlaces} - ${new Date(a.fecha).toLocaleDateString()}`;
-                    select.appendChild(opt);
-                });
-            } catch (error) { console.error("Error cargando alianzas"); }
+            const res = await fetch(`${API_URL}/alianzas`);
+            alianzasData = await res.json();
+            const select = document.getElementById('select-alianzas');
+            select.innerHTML = '<option value="">Selecciona una alianza...</option>';
+            alianzasData.forEach(a => {
+                select.innerHTML += `<option value="${a.id}">${a.enlaces} - ${new Date(a.fecha).toLocaleDateString()}</option>`;
+            });
         }
 
-        // ADMIN: MOSTRAR ALIANZA PARA PDF
         function mostrarAlianza() {
             const id = document.getElementById('select-alianzas').value;
-            const pdfContent = document.getElementById('pdf-content');
-            const btnPdf = document.getElementById('btn-pdf');
-            if (!id) {
-                pdfContent.classList.add('hidden');
-                btnPdf.classList.add('hidden');
-                return;
-            }
-            const alianza = alianzasData.find(a => a.id == id);
-            document.getElementById('pdf-def').textContent = alianza.definicion;
-            document.getElementById('pdf-enl').textContent = alianza.enlaces;
-            document.getElementById('pdf-con').textContent = alianza.contacto;
-            document.getElementById('pdf-adm').textContent = alianza.admision;
-            document.getElementById('pdf-url').textContent = alianza.url_inicio;
-            document.getElementById('pdf-fecha').textContent = new Date(alianza.fecha).toLocaleString();
-            
-            pdfContent.classList.remove('hidden');
-            btnPdf.classList.remove('hidden');
+            const div = document.getElementById('pdf-content');
+            if (!id) return div.classList.add('hidden');
+            const a = alianzasData.find(x => x.id == id);
+            document.getElementById('edit-id').value = a.id;
+            document.getElementById('pdf-def').value = a.definicion;
+            document.getElementById('pdf-enl').value = a.enlaces;
+            document.getElementById('pdf-con').value = a.contacto;
+            document.getElementById('pdf-adm').value = a.admision;
+            document.getElementById('pdf-url').value = a.url_inicio;
+            document.getElementById('pdf-fecha').textContent = new Date(a.fecha).toLocaleString();
+            div.classList.remove('hidden');
         }
 
-        // ADMIN: GENERAR PDF
-        function generarPDF() {
-            const element = document.getElementById('pdf-content');
-            const opt = {
-                margin:       1,
-                filename:     'alianza_educativa.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        async function guardarEdicionAlianza() {
+            const payload = {
+                id: document.getElementById('edit-id').value,
+                definicion: document.getElementById('pdf-def').value,
+                enlaces: document.getElementById('pdf-enl').value,
+                contacto: document.getElementById('pdf-con').value,
+                admision: document.getElementById('pdf-adm').value,
+                url_inicio: document.getElementById('pdf-url').value
             };
-            html2pdf().set(opt).from(element).save();
+            await fetch(`${API_URL}/alianzas`, { method: 'PUT', body: JSON.stringify(payload) });
+            alert("Alianza actualizada");
+            cargarAlianzas();
         }
 
-        // ADMIN: CARGAR LOGS
-        async function cargarLogs() {
-            try {
-                const res = await fetch(`${API_URL}/logs`);
-                const logs = await res.json();
-                const tbody = document.querySelector('#logs-table tbody');
-                tbody.innerHTML = '';
-                logs.forEach(l => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${l.username}</td><td>${new Date(l.fecha).toLocaleString()}</td>`;
-                    tbody.appendChild(tr);
-                });
-            } catch (error) { console.error("Error cargando logs"); }
+        function generarPDF() {
+            // Para el PDF ocultamos botones e inputs visualmente
+            const element = document.getElementById('pdf-content');
+            html2pdf().from(element).save('alianza.pdf');
         }
 
-        // ADMIN: CREAR USUARIO
+        async function cargarUsuarios() {
+            const res = await fetch(`${API_URL}/usuarios`);
+            usuariosData = await res.json();
+            const select = document.getElementById('select-usuarios');
+            select.innerHTML = '<option value="">-- Crear Nuevo Usuario --</option>';
+            usuariosData.forEach(u => select.innerHTML += `<option value="${u.id}">${u.username} (${u.role})</option>`);
+        }
+
+        function mostrarUsuario() {
+            const id = document.getElementById('select-usuarios').value;
+            if (!id) return resetUserForm();
+            const u = usuariosData.find(x => x.id == id);
+            document.getElementById('edit-user-id').value = u.id;
+            document.getElementById('new-user').value = u.username;
+            document.getElementById('new-user').disabled = true; // No cambiar username
+            document.getElementById('new-role').value = u.role;
+            document.getElementById('btn-user-submit').textContent = "Actualizar Usuario";
+        }
+
+        function resetUserForm() {
+            document.getElementById('form-usuario').reset();
+            document.getElementById('edit-user-id').value = '';
+            document.getElementById('new-user').disabled = false;
+            document.getElementById('select-usuarios').value = '';
+            document.getElementById('btn-user-submit').textContent = "Crear Usuario";
+        }
+
         document.getElementById('form-usuario').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const u = document.getElementById('new-user').value;
-            const p = document.getElementById('new-pass').value;
-            const r = document.getElementById('new-role').value;
-            const msg = document.getElementById('userMsg');
-            try {
-                const res = await fetch(`${API_URL}/usuarios`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p, role: r })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    msg.style.color = "green"; msg.textContent = "Usuario creado con éxito";
-                    document.getElementById('form-usuario').reset();
-                } else {
-                    msg.style.color = "red"; msg.textContent = data.message;
-                }
-                setTimeout(() => msg.textContent = '', 3000);
-            } catch (error) { alert("Error creando usuario"); }
+            const id = document.getElementById('edit-user-id').value;
+            const payload = {
+                id: id,
+                username: document.getElementById('new-user').value,
+                password: document.getElementById('new-pass').value,
+                role: document.getElementById('new-role').value
+            };
+            const method = id ? 'PUT' : 'POST';
+            const res = await fetch(`${API_URL}/usuarios`, { method: method, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if(data.success) {
+                document.getElementById('userMsg').textContent = id ? "Usuario actualizado" : "Usuario creado";
+                resetUserForm(); cargarUsuarios();
+            } else {
+                document.getElementById('userMsg').textContent = data.message;
+            }
+            setTimeout(() => document.getElementById('userMsg').textContent = '', 3000);
         });
+
+        async function cargarLogs() {
+            const res = await fetch(`${API_URL}/logs`);
+            const logs = await res.json();
+            const tbody = document.querySelector('#logs-table tbody');
+            tbody.innerHTML = '';
+            logs.forEach(l => tbody.innerHTML += `<tr><td>${l.username}</td><td>${new Date(l.fecha).toLocaleString()}</td></tr>`);
+        }
     </script>
 </body>
 </html>
