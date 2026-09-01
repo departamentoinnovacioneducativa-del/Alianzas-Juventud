@@ -1,0 +1,20 @@
+{
+  "name": "Registro de Alianzas Educativas",
+  "short_name": "Alianzas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#002366",
+  "theme_color": "#002366",
+  "icons": [
+    {
+      "src": "alianza.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "alianza.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
