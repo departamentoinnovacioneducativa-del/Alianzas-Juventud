@@ -45,7 +45,7 @@
 
     <!-- APP VERSION CONTROL -->
     <script>
-        const APP_VERSION = '1.0.2'; // Versión actualizada para forzar refresco
+        const APP_VERSION = '1.0.3';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
             caches.keys().then(names => { for (let name of names) caches.delete(name); });
             localStorage.setItem('app_version', APP_VERSION);
@@ -209,13 +209,18 @@
         }
 
         function generarPDF() {
-            // Creamos un documento virtual limpio solo para el PDF
-            const div = document.createElement('div');
-            div.style.padding = '30px';
-            div.style.fontFamily = 'Arial, sans-serif';
-            div.style.color = '#333';
-            div.style.fontSize = '14px';
-            div.innerHTML = `
+            // 1. Creamos el contenedor temporal
+            const tempDiv = document.createElement('div');
+            tempDiv.style.padding = '30px';
+            tempDiv.style.fontFamily = 'Arial, sans-serif';
+            tempDiv.style.color = '#333';
+            tempDiv.style.fontSize = '14px';
+            tempDiv.style.width = '800px'; 
+            tempDiv.style.position = 'absolute'; 
+            tempDiv.style.top = '-9999px'; 
+            
+            // 2. Le inyectamos los datos del formulario
+            tempDiv.innerHTML = `
                 <h2 style="color: #002366; text-align: center; border-bottom: 2px solid #002366; padding-bottom: 10px;">Detalles de Alianza Educativa</h2>
                 <br>
                 <p><strong>Definición del convenio:</strong><br>${document.getElementById('pdf-def').value}</p>
@@ -224,10 +229,12 @@
                 <p><strong>Formas de admisión:</strong><br>${document.getElementById('pdf-adm').value}</p>
                 <p><strong>URL de inicio:</strong><br><a href="${document.getElementById('pdf-url').value}" style="color: #002366;">${document.getElementById('pdf-url').value}</a></p>
                 <br><hr><br>
-                <p style="text-align: right; color: gray; font-size: 12px;">Fecha de registro en sistema: ${document.getElementById('pdf-fecha').textContent}</p>
+                <p style="text-align: right; color: gray; font-size: 12px;">Fecha de registro: ${document.getElementById('pdf-fecha').textContent}</p>
             `;
             
-            // Configuramos la calidad y márgenes del PDF
+            // 3. Lo agregamos al cuerpo de la página
+            document.body.appendChild(tempDiv);
+            
             const opt = {
                 margin:       0.5,
                 filename:     'Alianza_Educativa.pdf',
@@ -236,8 +243,10 @@
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
             
-            // Generamos el archivo usando el documento virtual
-            html2pdf().set(opt).from(div).save();
+            // 4. Generamos el PDF y destruimos el contenedor
+            html2pdf().set(opt).from(tempDiv).save().then(() => {
+                document.body.removeChild(tempDiv);
+            });
         }
 
         async function cargarUsuarios() {
