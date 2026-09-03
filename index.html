@@ -6,7 +6,6 @@
     <title>Registro de Alianzas Educativas</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#002366">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --bg-main: #002366; --bg-container: #ffffff;
@@ -23,36 +22,47 @@
         .banner img { width: 100%; max-width: 350px; height: auto; object-fit: contain; }
         .theme-toggle { position: absolute; top: 15px; right: 15px; background: transparent; border: 2px solid var(--text-main); color: var(--text-main); border-radius: 5px; cursor: pointer; padding: 5px 10px; width: auto; }
         .container { background-color: var(--bg-container); padding: 20px; border-radius: 8px; margin-top: 15px; width: 95%; max-width: 800px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); box-sizing: border-box; }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid var(--border-color); background-color: var(--bg-container); color: var(--text-main); box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; background-color: var(--btn-bg); color: white; cursor: pointer; font-weight: bold; font-size: 16px; }
-        button:hover { background-color: var(--btn-hover); }
+        button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: none; background-color: var(--btn-bg); color: white; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        button:hover { background-color: var(--btn-hover); filter: brightness(1.2); }
+        .btn-estudiante { background-color: #f39c12; }
         h2, h3 { text-align: center; color: var(--text-main); }
-        .pdf-container { padding: 15px; border: 1px solid var(--border-color); margin-top: 15px; background: var(--bg-container); }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
         th { background-color: var(--btn-bg); color: white; }
         .scroll-table { overflow-x: auto; }
         hr { border: 1px solid var(--border-color); margin: 20px 0; }
+        
+        /* DISEÑO LLAMATIVO PARA LA VISTA/IMPRESIÓN */
+        .print-area { padding: 30px; border-radius: 12px; margin-top: 20px; transition: 0.3s; color: #333; }
+        .header-alianza { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 3px solid rgba(0,0,0,0.1); padding-bottom: 15px; }
+        .header-alianza img { max-width: 120px; max-height: 120px; border-radius: 10px; object-fit: contain; background: white; padding: 5px; }
+        .header-alianza h1 { margin: 0; font-size: 2.2em; text-transform: uppercase; text-shadow: 1px 1px 2px rgba(255,255,255,0.7); }
+        .info-box { background: rgba(255,255,255,0.85); padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .info-box strong { color: #002366; display: block; margin-bottom: 5px; font-size: 1.1em; }
+
+        /* MAGIA PARA IMPRESIÓN (PDF NATIVO) */
+        @media print {
+            body * { visibility: hidden; background: white; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 0; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="banner">
+    <div class="banner no-print">
         <button class="theme-toggle" onclick="toggleTheme()">🌙/☀️</button>
         <img src="alianza.png" alt="Banner de Alianzas">
     </div>
 
-    <!-- APP VERSION CONTROL -->
     <script>
-        const APP_VERSION = '1.0.3';
+        const APP_VERSION = '1.1.0';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
             caches.keys().then(names => { for (let name of names) caches.delete(name); });
-            localStorage.setItem('app_version', APP_VERSION);
-            location.reload();
-        }
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            localStorage.setItem('app_version', APP_VERSION); location.reload();
         }
         function toggleTheme() {
             document.body.classList.toggle('dark-mode');
@@ -61,70 +71,81 @@
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
     </script>
 
-    <!-- SECCIÓN LOGIN -->
-    <div class="container" id="login-section">
+    <!-- SECCIÓN LOGIN PRINCIPAL -->
+    <div class="container no-print" id="login-section">
         <h2>Acceso al Sistema</h2>
         <form id="loginForm">
             <input type="text" id="username" placeholder="Usuario" required>
             <input type="password" id="password" placeholder="Contraseña" required>
-            <button type="submit">Ingresar</button>
+            <button type="submit">Ingresar como Personal</button>
         </form>
-        <p id="loginError" style="color: red; text-align: center;" class="hidden">Credenciales incorrectas.</p>
+        <hr>
+        <button class="btn-estudiante" onclick="mostrarLoginEstudiante()">Soy Estudiante</button>
+        <p id="loginError" style="color: red; text-align: center;" class="hidden"></p>
     </div>
 
-    <!-- SECCIÓN ENLACES (Registro) -->
-    <div class="container hidden" id="enlaces-section">
+    <!-- SECCIÓN LOGIN ESTUDIANTE -->
+    <div class="container hidden no-print" id="login-estudiante-section">
+        <h2>Acceso para Estudiantes</h2>
+        <p style="text-align: center; font-size: 0.9em;">Ingresa tu correo institucional (@juventud.edu.mx)</p>
+        <form id="loginEstudianteForm">
+            <input type="email" id="email-estudiante" placeholder="ejemplo@juventud.edu.mx" required>
+            <button type="submit" class="btn-estudiante">Entrar para explorar</button>
+        </form>
+        <button onclick="location.reload()" style="background-color: gray;">Regresar</button>
+        <p id="loginEstError" style="color: red; text-align: center;" class="hidden"></p>
+    </div>
+
+    <!-- SECCIÓN ENLACES (Registro Único) -->
+    <div class="container hidden no-print" id="enlaces-section">
         <h2>Registro de Alianza</h2>
+        <p style="color: #d9534f; text-align: center; font-size: 0.9em;"><strong>Aviso:</strong> Solo podrás enviar esta información una vez.</p>
         <form id="registroForm">
-            <textarea id="definicion" placeholder="1. Definición de beca-convenio" rows="3" required></textarea>
-            <input type="text" id="enlaces" placeholder="2. Nombre del o los enlaces" required>
-            <input type="text" id="contacto" placeholder="3. Medios de contacto" required>
-            <textarea id="admision" placeholder="4. Formas de admisión" rows="2" required></textarea>
-            <input type="url" id="url_inicio" placeholder="5. URL de inicio del proceso" required>
+            <label>1. Definición de beca-convenio</label> <textarea id="definicion" rows="3" required></textarea>
+            <label>2. Nombre de la Institución (Enlace)</label> <input type="text" id="enlaces" required>
+            <label>3. Medios de contacto</label> <input type="text" id="contacto" required>
+            <label>4. Formas de admisión</label> <textarea id="admision" rows="2" required></textarea>
+            <label>5. URL de inicio del proceso</label> <input type="url" id="url_inicio" required>
+            <label>6. URL de tu Logo (Imagen)</label> <input type="url" id="logo_url" placeholder="https://..." required>
+            <label>7. Color de fondo para tu página</label> <input type="color" id="color_fondo" value="#e3f2fd" style="height: 50px;">
             <button type="submit">Enviar Solicitud</button>
         </form>
-        <p id="registroExito" style="color: #5bc0be; text-align: center;" class="hidden">¡Enviado con éxito!</p>
+        <p id="registroExito" style="color: #5bc0be; text-align: center;" class="hidden">¡Enviado con éxito! Tu acceso ha sido bloqueado por seguridad.</p>
         <button onclick="location.reload()" style="background-color: #d9534f;">Cerrar Sesión</button>
     </div>
 
+    <!-- SECCIÓN VISOR GENERAL (Usado por Admin y Estudiantes) -->
+    <div class="container hidden no-print" id="visor-section">
+        <h2 id="visor-titulo">Visor de Alianzas</h2>
+        <select id="select-alianzas-visor" onchange="mostrarAlianzaVisual()"></select>
+        <button onclick="window.print()" class="hidden" id="btn-imprimir" style="background-color: #5bc0be;">Guardar como PDF / Imprimir</button>
+        <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 20px;">Salir</button>
+    </div>
+
     <!-- SECCIÓN ADMIN (Panel) -->
-    <div class="container hidden" id="admin-section">
+    <div class="container hidden no-print" id="admin-section">
         <h2>Panel de Administrador</h2>
         
-        <h3>Gestión de Alianzas</h3>
-        <select id="select-alianzas" onchange="mostrarAlianza()"></select>
-        
-        <div id="pdf-content" class="pdf-container hidden">
-            <input type="hidden" id="edit-id">
-            <label>Definición:</label> <textarea id="pdf-def" rows="2"></textarea>
-            <label>Enlaces:</label> <input type="text" id="pdf-enl">
-            <label>Contacto:</label> <input type="text" id="pdf-con">
-            <label>Admisión:</label> <textarea id="pdf-adm" rows="2"></textarea>
-            <label>URL:</label> <input type="text" id="pdf-url">
-            <p style="font-size: 0.8em; color: gray;">Registrado: <span id="pdf-fecha"></span></p>
-            <button onclick="guardarEdicionAlianza()" style="background-color: #5bc0be;">Guardar Cambios</button>
-            <button onclick="generarPDF()">Imprimir PDF</button>
-        </div>
-
-        <hr>
-
         <h3>Gestión de Usuarios</h3>
         <select id="select-usuarios" onchange="mostrarUsuario()"></select>
         <form id="form-usuario">
             <input type="hidden" id="edit-user-id">
             <input type="text" id="new-user" placeholder="Nombre de usuario" required>
-            <input type="text" id="new-pass" placeholder="Nueva Contraseña" required>
+            <input type="password" id="new-pass" placeholder="Contraseña (opcional al editar)">
             <select id="new-role" required>
                 <option value="enlace">Enlace</option>
                 <option value="admin">Administrador</option>
             </select>
-            <button type="submit" id="btn-user-submit">Crear/Actualizar Usuario</button>
-            <button type="button" onclick="resetUserForm()" style="background-color: gray;">Cancelar Edición</button>
+            <label style="display:flex; align-items:center; gap:10px; margin: 10px 0;">
+                <input type="checkbox" id="user-locked" style="width: auto;"> Bloquear acceso (Ya envió datos)
+            </label>
+            <button type="submit" id="btn-user-submit">Crear Usuario</button>
+            <button type="button" id="btn-user-delete" class="hidden" style="background-color: #d9534f;" onclick="borrarUsuario()">Eliminar Usuario</button>
+            <button type="button" onclick="resetUserForm()" style="background-color: gray;">Cancelar</button>
         </form>
         <p id="userMsg" style="text-align: center;"></p>
 
         <hr>
-
         <h3>Historial de Ingresos</h3>
         <div class="scroll-table">
             <table id="logs-table">
@@ -132,15 +153,51 @@
                 <tbody></tbody>
             </table>
         </div>
-
         <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 30px;">Cerrar Sesión</button>
+    </div>
+
+    <!-- PLANTILLA VISUAL (AQUÍ SE INYECTAN LOS DATOS Y ESTO SE IMPRIME) -->
+    <div id="print-area" class="print-area hidden container">
+        <div class="header-alianza">
+            <img id="v-logo" src="" alt="Logo">
+            <h1 id="v-nombre">Nombre Institución</h1>
+        </div>
+        <div class="info-box"><strong>Definición del convenio:</strong><div id="v-def"></div></div>
+        <div class="info-box"><strong>Contacto:</strong><div id="v-con"></div></div>
+        <div class="info-box"><strong>Admisión:</strong><div id="v-adm"></div></div>
+        <div class="info-box"><strong>Iniciar proceso:</strong><br><a id="v-url" href="#" target="_blank"></a></div>
+        <p style="text-align: right; color: rgba(0,0,0,0.5); font-size: 12px; margin-top: 20px;">Registrado el: <span id="v-fecha"></span></p>
     </div>
 
     <script>
         const API_URL = "https://api-alianzas.adrian-camelot32.workers.dev";
+        let currentUser = "";
         let alianzasData = [];
         let usuariosData = [];
 
+        function mostrarLoginEstudiante() {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('login-estudiante-section').classList.remove('hidden');
+        }
+
+        // LOGIN ESTUDIANTE
+        document.getElementById('loginEstudianteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email-estudiante').value;
+            const res = await fetch(`${API_URL}/login-estudiante`, { method: 'POST', body: JSON.stringify({ email }) });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('login-estudiante-section').classList.add('hidden');
+                document.getElementById('visor-section').classList.remove('hidden');
+                document.getElementById('visor-titulo').textContent = "Explora nuestras Alianzas";
+                cargarAlianzas();
+            } else {
+                const err = document.getElementById('loginEstError');
+                err.textContent = data.message; err.classList.remove('hidden');
+            }
+        });
+
+        // LOGIN NORMAL
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const u = document.getElementById('username').value;
@@ -149,112 +206,83 @@
                 const res = await fetch(`${API_URL}/login`, { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
                 const data = await res.json();
                 if (data.success) {
+                    currentUser = data.username;
                     document.getElementById('login-section').classList.add('hidden');
                     if (data.role === 'admin') {
+                        document.getElementById('visor-section').classList.remove('hidden'); // Admin también puede ver
                         document.getElementById('admin-section').classList.remove('hidden');
                         cargarAlianzas(); cargarLogs(); cargarUsuarios();
                     } else {
                         document.getElementById('enlaces-section').classList.remove('hidden');
                     }
-                } else { document.getElementById('loginError').classList.remove('hidden'); }
+                } else {
+                    const err = document.getElementById('loginError');
+                    err.textContent = data.message; err.classList.remove('hidden');
+                }
             } catch (error) { alert("Error de conexión"); }
         });
 
+        // REGISTRO
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const payload = { definicion: document.getElementById('definicion').value, enlaces: document.getElementById('enlaces').value, contacto: document.getElementById('contacto').value, admision: document.getElementById('admision').value, url_inicio: document.getElementById('url_inicio').value };
+            const payload = { 
+                username: currentUser,
+                definicion: document.getElementById('definicion').value, 
+                enlaces: document.getElementById('enlaces').value, 
+                contacto: document.getElementById('contacto').value, 
+                admision: document.getElementById('admision').value, 
+                url_inicio: document.getElementById('url_inicio').value,
+                logo_url: document.getElementById('logo_url').value,
+                color_fondo: document.getElementById('color_fondo').value
+            };
             await fetch(`${API_URL}/registro`, { method: 'POST', body: JSON.stringify(payload) });
-            document.getElementById('registroForm').reset();
+            document.getElementById('registroForm').classList.add('hidden');
             document.getElementById('registroExito').classList.remove('hidden');
-            setTimeout(() => document.getElementById('registroExito').classList.add('hidden'), 3000);
         });
 
         async function cargarAlianzas() {
             const res = await fetch(`${API_URL}/alianzas`);
             alianzasData = await res.json();
-            const select = document.getElementById('select-alianzas');
-            select.innerHTML = '<option value="">Selecciona una alianza...</option>';
+            const select = document.getElementById('select-alianzas-visor');
+            select.innerHTML = '<option value="">Selecciona una alianza para visualizar...</option>';
             alianzasData.forEach(a => {
-                select.innerHTML += `<option value="${a.id}">${a.enlaces} - ${new Date(a.fecha).toLocaleDateString()}</option>`;
+                select.innerHTML += `<option value="${a.id}">${a.enlaces}</option>`;
             });
         }
 
-        function mostrarAlianza() {
-            const id = document.getElementById('select-alianzas').value;
-            const div = document.getElementById('pdf-content');
-            if (!id) return div.classList.add('hidden');
+        function mostrarAlianzaVisual() {
+            const id = document.getElementById('select-alianzas-visor').value;
+            const printArea = document.getElementById('print-area');
+            const btnPrint = document.getElementById('btn-imprimir');
+            if (!id) {
+                printArea.classList.add('hidden'); btnPrint.classList.add('hidden'); return;
+            }
             const a = alianzasData.find(x => x.id == id);
-            document.getElementById('edit-id').value = a.id;
-            document.getElementById('pdf-def').value = a.definicion;
-            document.getElementById('pdf-enl').value = a.enlaces;
-            document.getElementById('pdf-con').value = a.contacto;
-            document.getElementById('pdf-adm').value = a.admision;
-            document.getElementById('pdf-url').value = a.url_inicio;
-            document.getElementById('pdf-fecha').textContent = new Date(a.fecha).toLocaleString();
-            div.classList.remove('hidden');
+            
+            // Inyectar datos
+            document.getElementById('v-logo').src = a.logo_url || 'alianza.png';
+            document.getElementById('v-nombre').textContent = a.enlaces;
+            document.getElementById('v-def').textContent = a.definicion;
+            document.getElementById('v-con').textContent = a.contacto;
+            document.getElementById('v-adm').textContent = a.admision;
+            document.getElementById('v-url').href = a.url_inicio;
+            document.getElementById('v-url').textContent = a.url_inicio;
+            document.getElementById('v-fecha').textContent = new Date(a.fecha).toLocaleDateString();
+            
+            // Aplicar el color de fondo elegido por el enlace
+            printArea.style.backgroundColor = a.color_fondo || '#e3f2fd';
+            
+            printArea.classList.remove('hidden');
+            btnPrint.classList.remove('hidden');
         }
 
-        async function guardarEdicionAlianza() {
-            const payload = {
-                id: document.getElementById('edit-id').value,
-                definicion: document.getElementById('pdf-def').value,
-                enlaces: document.getElementById('pdf-enl').value,
-                contacto: document.getElementById('pdf-con').value,
-                admision: document.getElementById('pdf-adm').value,
-                url_inicio: document.getElementById('pdf-url').value
-            };
-            await fetch(`${API_URL}/alianzas`, { method: 'PUT', body: JSON.stringify(payload) });
-            alert("Alianza actualizada");
-            cargarAlianzas();
-        }
-
-        function generarPDF() {
-            // 1. Creamos el contenedor temporal
-            const tempDiv = document.createElement('div');
-            tempDiv.style.padding = '30px';
-            tempDiv.style.fontFamily = 'Arial, sans-serif';
-            tempDiv.style.color = '#333';
-            tempDiv.style.fontSize = '14px';
-            tempDiv.style.width = '800px'; 
-            tempDiv.style.position = 'absolute'; 
-            tempDiv.style.top = '-9999px'; 
-            
-            // 2. Le inyectamos los datos del formulario
-            tempDiv.innerHTML = `
-                <h2 style="color: #002366; text-align: center; border-bottom: 2px solid #002366; padding-bottom: 10px;">Detalles de Alianza Educativa</h2>
-                <br>
-                <p><strong>Definición del convenio:</strong><br>${document.getElementById('pdf-def').value}</p>
-                <p><strong>Enlaces (Responsables):</strong><br>${document.getElementById('pdf-enl').value}</p>
-                <p><strong>Medios de contacto:</strong><br>${document.getElementById('pdf-con').value}</p>
-                <p><strong>Formas de admisión:</strong><br>${document.getElementById('pdf-adm').value}</p>
-                <p><strong>URL de inicio:</strong><br><a href="${document.getElementById('pdf-url').value}" style="color: #002366;">${document.getElementById('pdf-url').value}</a></p>
-                <br><hr><br>
-                <p style="text-align: right; color: gray; font-size: 12px;">Fecha de registro: ${document.getElementById('pdf-fecha').textContent}</p>
-            `;
-            
-            // 3. Lo agregamos al cuerpo de la página
-            document.body.appendChild(tempDiv);
-            
-            const opt = {
-                margin:       0.5,
-                filename:     'Alianza_Educativa.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-            
-            // 4. Generamos el PDF y destruimos el contenedor
-            html2pdf().set(opt).from(tempDiv).save().then(() => {
-                document.body.removeChild(tempDiv);
-            });
-        }
-
+        // PANEL ADMIN - USUARIOS
         async function cargarUsuarios() {
             const res = await fetch(`${API_URL}/usuarios`);
             usuariosData = await res.json();
             const select = document.getElementById('select-usuarios');
             select.innerHTML = '<option value="">-- Crear Nuevo Usuario --</option>';
-            usuariosData.forEach(u => select.innerHTML += `<option value="${u.id}">${u.username} (${u.role})</option>`);
+            usuariosData.forEach(u => select.innerHTML += `<option value="${u.id}">${u.username} (${u.role}) ${u.locked ? '🔒' : ''}</option>`);
         }
 
         function mostrarUsuario() {
@@ -263,39 +291,51 @@
             const u = usuariosData.find(x => x.id == id);
             document.getElementById('edit-user-id').value = u.id;
             document.getElementById('new-user').value = u.username;
-            document.getElementById('new-user').disabled = true; // No cambiar username
+            document.getElementById('new-user').disabled = true; 
+            document.getElementById('new-pass').required = false; 
             document.getElementById('new-role').value = u.role;
-            document.getElementById('btn-user-submit').textContent = "Actualizar Usuario";
+            document.getElementById('user-locked').checked = u.locked === 1;
+            document.getElementById('btn-user-submit').textContent = "Actualizar (Desbloquear/Bloquear)";
+            document.getElementById('btn-user-delete').classList.remove('hidden');
         }
 
         function resetUserForm() {
             document.getElementById('form-usuario').reset();
             document.getElementById('edit-user-id').value = '';
             document.getElementById('new-user').disabled = false;
-            document.getElementById('select-usuarios').value = '';
+            document.getElementById('new-pass').required = true;
             document.getElementById('btn-user-submit').textContent = "Crear Usuario";
+            document.getElementById('btn-user-delete').classList.add('hidden');
         }
 
         document.getElementById('form-usuario').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-user-id').value;
             const payload = {
-                id: id,
-                username: document.getElementById('new-user').value,
+                id: id, username: document.getElementById('new-user').value,
                 password: document.getElementById('new-pass').value,
-                role: document.getElementById('new-role').value
+                role: document.getElementById('new-role').value,
+                locked: document.getElementById('user-locked').checked ? 1 : 0
             };
             const method = id ? 'PUT' : 'POST';
             const res = await fetch(`${API_URL}/usuarios`, { method: method, body: JSON.stringify(payload) });
             const data = await res.json();
             if(data.success) {
-                document.getElementById('userMsg').textContent = id ? "Usuario actualizado" : "Usuario creado";
+                document.getElementById('userMsg').style.color = "green"; document.getElementById('userMsg').textContent = id ? "Usuario actualizado" : "Usuario creado";
                 resetUserForm(); cargarUsuarios();
             } else {
-                document.getElementById('userMsg').textContent = data.message;
+                document.getElementById('userMsg').style.color = "red"; document.getElementById('userMsg').textContent = data.message;
             }
             setTimeout(() => document.getElementById('userMsg').textContent = '', 3000);
         });
+
+        async function borrarUsuario() {
+            const id = document.getElementById('edit-user-id').value;
+            if (confirm("¿Eliminar usuario definitivamente?")) {
+                await fetch(`${API_URL}/usuarios`, { method: 'DELETE', body: JSON.stringify({ id }) });
+                resetUserForm(); cargarUsuarios();
+            }
+        }
 
         async function cargarLogs() {
             const res = await fetch(`${API_URL}/logs`);
