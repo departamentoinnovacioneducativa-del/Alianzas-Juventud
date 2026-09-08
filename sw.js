@@ -1,4 +1,4 @@
-const CACHE_NAME = 'alianzas-v1.0.4'; // Cambia esta versión para forzar actualización
+const CACHE_NAME = 'alianzas-v1.1.3.2'; // Cambia esta versión para forzar actualización
 const urlsToCache = [
   './',
   './index.html',
