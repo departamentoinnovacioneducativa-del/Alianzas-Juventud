@@ -31,10 +31,9 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
         th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
         th { background-color: var(--btn-bg); color: white; }
-        .scroll-table { overflow-x: auto; }
+        .scroll-table { overflow-x: auto; max-height: 250px; }
         hr { border: 1px solid var(--border-color); margin: 20px 0; }
         
-        /* DISEÑO LLAMATIVO PARA LA VISTA/IMPRESIÓN */
         .print-area { padding: 30px; border-radius: 12px; margin-top: 20px; transition: 0.3s; color: #333; }
         .header-alianza { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 3px solid rgba(0,0,0,0.1); padding-bottom: 15px; }
         .header-alianza img { max-width: 120px; max-height: 120px; border-radius: 10px; object-fit: contain; background: white; padding: 5px; }
@@ -42,7 +41,9 @@
         .info-box { background: rgba(255,255,255,0.85); padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .info-box strong { color: #002366; display: block; margin-bottom: 5px; font-size: 1.1em; }
 
-        /* MAGIA PARA IMPRESIÓN (PDF NATIVO) */
+        .toast { position: fixed; bottom: -100px; right: 20px; background-color: #5bc0be; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 9999; font-weight: bold; font-size: 1.1em; transition: bottom 0.5s ease-in-out; }
+        .toast.show { bottom: 20px; }
+
         @media print {
             body * { visibility: hidden; background: white; }
             .print-area, .print-area * { visibility: visible; }
@@ -53,13 +54,15 @@
 </head>
 <body>
 
+    <div id="toast" class="toast">🔔 ¡Se ha registrado una nueva alianza!</div>
+
     <div class="banner no-print">
         <button class="theme-toggle" onclick="toggleTheme()">🌙/☀️</button>
         <img src="alianza.png" alt="Banner de Alianzas">
     </div>
 
     <script>
-        const APP_VERSION = '1.1.0';
+        const APP_VERSION = '1.3.1';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
             caches.keys().then(names => { for (let name of names) caches.delete(name); });
             localStorage.setItem('app_version', APP_VERSION); location.reload();
@@ -71,7 +74,7 @@
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
     </script>
 
-    <!-- SECCIÓN LOGIN PRINCIPAL -->
+    <!-- LOGIN PRINCIPAL -->
     <div class="container no-print" id="login-section">
         <h2>Acceso al Sistema</h2>
         <form id="loginForm">
@@ -79,12 +82,21 @@
             <input type="password" id="password" placeholder="Contraseña" required>
             <button type="submit">Ingresar como Personal</button>
         </form>
+        
+        <!-- Contenedor del error y del botón de reintento directo en el login -->
+        <div id="login-feedback" style="margin-top: 15px; text-align: center;">
+            <p id="loginError" style="color: red; font-size: 0.95em;" class="hidden"></p>
+            <div id="div-reintento" class="hidden" style="margin-top: 10px;">
+                <button type="button" onclick="solicitarReintento()" style="background-color: #f39c12;">Solicitar nuevo intento a Alejandra</button>
+                <p id="msgReintento" style="color: green; font-size: 0.9em; margin-top: 5px;" class="hidden"></p>
+            </div>
+        </div>
+
         <hr>
         <button class="btn-estudiante" onclick="mostrarLoginEstudiante()">Soy Estudiante</button>
-        <p id="loginError" style="color: red; text-align: center;" class="hidden"></p>
     </div>
 
-    <!-- SECCIÓN LOGIN ESTUDIANTE -->
+    <!-- LOGIN ESTUDIANTE -->
     <div class="container hidden no-print" id="login-estudiante-section">
         <h2>Acceso para Estudiantes</h2>
         <p style="text-align: center; font-size: 0.9em;">Ingresa tu correo institucional (@juventud.edu.mx)</p>
@@ -96,7 +108,7 @@
         <p id="loginEstError" style="color: red; text-align: center;" class="hidden"></p>
     </div>
 
-    <!-- SECCIÓN ENLACES (Registro Único) -->
+    <!-- REGISTRO ENLACES -->
     <div class="container hidden no-print" id="enlaces-section">
         <h2>Registro de Alianza</h2>
         <p style="color: #d9534f; text-align: center; font-size: 0.9em;"><strong>Aviso:</strong> Solo podrás enviar esta información una vez.</p>
@@ -114,15 +126,18 @@
         <button onclick="location.reload()" style="background-color: #d9534f;">Cerrar Sesión</button>
     </div>
 
-    <!-- SECCIÓN VISOR GENERAL (Usado por Admin y Estudiantes) -->
+    <!-- VISOR GENERAL (Estudiante / Admin) -->
     <div class="container hidden no-print" id="visor-section">
         <h2 id="visor-titulo">Visor de Alianzas</h2>
-        <select id="select-alianzas-visor" onchange="mostrarAlianzaVisual()"></select>
-        <button onclick="window.print()" class="hidden" id="btn-imprimir" style="background-color: #5bc0be;">Guardar como PDF / Imprimir</button>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="select-alianzas-visor" onchange="mostrarAlianzaVisual()" style="flex: 1;"></select>
+            <button onclick="window.print()" class="hidden" id="btn-imprimir" style="background-color: #5bc0be; width: auto; padding: 12px 20px;">🖨️ PDF / Imprimir</button>
+            <button onclick="borrarAlianzaActiva()" class="hidden" id="btn-eliminar-alianza" style="background-color: #d9534f; width: auto; padding: 12px 20px;">🗑️ Borrar Entidad</button>
+        </div>
         <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 20px;">Salir</button>
     </div>
 
-    <!-- SECCIÓN ADMIN (Panel) -->
+    <!-- PANEL ADMIN -->
     <div class="container hidden no-print" id="admin-section">
         <h2>Panel de Administrador</h2>
         
@@ -146,17 +161,27 @@
         <p id="userMsg" style="text-align: center;"></p>
 
         <hr>
-        <h3>Historial de Ingresos</h3>
+        <h3>📊 Reporte de Consultas Estudiantiles</h3>
+        <button onclick="cargarReporteEstudiantes()" style="background-color: #5bc0be;">Actualizar Reporte</button>
+        <div class="scroll-table">
+            <table id="estudiantes-table">
+                <thead><tr><th>Correo Estudiante</th><th>Universidad Consultada</th><th>Visitas</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <hr>
+        <h3>Historial de Ingresos al Sistema</h3>
         <div class="scroll-table">
             <table id="logs-table">
-                <thead><tr><th>Usuario</th><th>Fecha y Hora</th></tr></thead>
+                <thead><tr><th>Usuario / Correo</th><th>Fecha y Hora</th></tr></thead>
                 <tbody></tbody>
             </table>
         </div>
         <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 30px;">Cerrar Sesión</button>
     </div>
 
-    <!-- PLANTILLA VISUAL (AQUÍ SE INYECTAN LOS DATOS Y ESTO SE IMPRIME) -->
+    <!-- PLANTILLA VISUAL -->
     <div id="print-area" class="print-area hidden container">
         <div class="header-alianza">
             <img id="v-logo" src="" alt="Logo">
@@ -172,8 +197,30 @@
     <script>
         const API_URL = "https://api-alianzas.adrian-camelot32.workers.dev";
         let currentUser = "";
+        let currentUserEmail = "";
+        let currentUserRole = "";
         let alianzasData = [];
         let usuariosData = [];
+        let totalAlianzas = 0;
+
+        function mostrarToast(mensaje) {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensaje;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 5000);
+        }
+
+        async function revisarNuevasAlianzas() {
+            try {
+                const res = await fetch(`${API_URL}/alianzas`);
+                const data = await res.json();
+                if (data.length > totalAlianzas && totalAlianzas > 0) {
+                    mostrarToast("🔔 ¡Se ha registrado una nueva alianza!");
+                    renderizarListaAlianzas(data);
+                }
+                totalAlianzas = data.length;
+            } catch (error) {}
+        }
 
         function mostrarLoginEstudiante() {
             document.getElementById('login-section').classList.add('hidden');
@@ -187,6 +234,8 @@
             const res = await fetch(`${API_URL}/login-estudiante`, { method: 'POST', body: JSON.stringify({ email }) });
             const data = await res.json();
             if (data.success) {
+                currentUserEmail = email;
+                currentUserRole = "estudiante";
                 document.getElementById('login-estudiante-section').classList.add('hidden');
                 document.getElementById('visor-section').classList.remove('hidden');
                 document.getElementById('visor-titulo').textContent = "Explora nuestras Alianzas";
@@ -202,25 +251,51 @@
             e.preventDefault();
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
+            currentUser = u;
+
+            // Ocultar mensajes previos
+            document.getElementById('loginError').classList.add('hidden');
+            document.getElementById('div-reintento').classList.add('hidden');
+
             try {
                 const res = await fetch(`${API_URL}/login`, { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
                 const data = await res.json();
+                
                 if (data.success) {
-                    currentUser = data.username;
+                    currentUserRole = data.role;
                     document.getElementById('login-section').classList.add('hidden');
                     if (data.role === 'admin') {
-                        document.getElementById('visor-section').classList.remove('hidden'); // Admin también puede ver
+                        document.getElementById('visor-section').classList.remove('hidden'); 
                         document.getElementById('admin-section').classList.remove('hidden');
-                        cargarAlianzas(); cargarLogs(); cargarUsuarios();
+                        cargarAlianzas(); cargarLogs(); cargarUsuarios(); cargarReporteEstudiantes();
+                        setInterval(revisarNuevasAlianzas, 10000);
                     } else {
+                        document.getElementById('login-section').classList.add('hidden');
                         document.getElementById('enlaces-section').classList.remove('hidden');
                     }
                 } else {
                     const err = document.getElementById('loginError');
-                    err.textContent = data.message; err.classList.remove('hidden');
+                    err.textContent = data.message;
+                    err.classList.remove('hidden');
+                    
+                    // Si está bloqueado, mostramos de inmediato el botón de solicitar reintento
+                    if (data.locked) {
+                        document.getElementById('div-reintento').classList.remove('hidden');
+                    }
                 }
             } catch (error) { alert("Error de conexión"); }
         });
+
+        // SOLICITAR REINTENTO
+        async function solicitarReintento() {
+            const res = await fetch(`${API_URL}/solicitar-reintento`, { method: 'POST', body: JSON.stringify({ username: currentUser }) });
+            const data = await res.json();
+            if (data.success) {
+                const msg = document.getElementById('msgReintento');
+                msg.textContent = "¡Solicitud enviada a Alejandra con éxito!";
+                msg.classList.remove('hidden');
+            }
+        }
 
         // REGISTRO
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
@@ -242,24 +317,33 @@
 
         async function cargarAlianzas() {
             const res = await fetch(`${API_URL}/alianzas`);
-            alianzasData = await res.json();
+            const data = await res.json();
+            totalAlianzas = data.length;
+            renderizarListaAlianzas(data);
+        }
+
+        function renderizarListaAlianzas(data) {
+            alianzasData = data;
             const select = document.getElementById('select-alianzas-visor');
+            const valorActual = select.value;
             select.innerHTML = '<option value="">Selecciona una alianza para visualizar...</option>';
             alianzasData.forEach(a => {
                 select.innerHTML += `<option value="${a.id}">${a.enlaces}</option>`;
             });
+            select.value = valorActual;
         }
 
-        function mostrarAlianzaVisual() {
+        async function mostrarAlianzaVisual() {
             const id = document.getElementById('select-alianzas-visor').value;
             const printArea = document.getElementById('print-area');
             const btnPrint = document.getElementById('btn-imprimir');
+            const btnEliminar = document.getElementById('btn-eliminar-alianza');
+            
             if (!id) {
-                printArea.classList.add('hidden'); btnPrint.classList.add('hidden'); return;
+                printArea.classList.add('hidden'); btnPrint.classList.add('hidden'); btnEliminar.classList.add('hidden'); return;
             }
             const a = alianzasData.find(x => x.id == id);
             
-            // Inyectar datos
             document.getElementById('v-logo').src = a.logo_url || 'alianza.png';
             document.getElementById('v-nombre').textContent = a.enlaces;
             document.getElementById('v-def').textContent = a.definicion;
@@ -269,14 +353,44 @@
             document.getElementById('v-url').textContent = a.url_inicio;
             document.getElementById('v-fecha').textContent = new Date(a.fecha).toLocaleDateString();
             
-            // Aplicar el color de fondo elegido por el enlace
             printArea.style.backgroundColor = a.color_fondo || '#e3f2fd';
-            
             printArea.classList.remove('hidden');
             btnPrint.classList.remove('hidden');
+            
+            if (currentUserRole === 'admin') {
+                btnEliminar.classList.remove('hidden');
+            }
+
+            if (currentUserRole === 'estudiante' && currentUserEmail) {
+                await fetch(`${API_URL}/track-estudiante`, {
+                    method: 'POST',
+                    body: JSON.stringify({ email: currentUserEmail, universidad: a.enlaces })
+                });
+            }
         }
 
-        // PANEL ADMIN - USUARIOS
+        async function borrarAlianzaActiva() {
+            const id = document.getElementById('select-alianzas-visor').value;
+            if (!id) return;
+            if (confirm("⚠️ ¿Estás seguro de que deseas eliminar esta entidad e información obsoleta? Esta acción es irreversible.")) {
+                await fetch(`${API_URL}/alianzas`, { method: 'DELETE', body: JSON.stringify({ id }) });
+                mostrarToast("✅ Entidad eliminada correctamente.");
+                document.getElementById('select-alianzas-visor').value = "";
+                mostrarAlianzaVisual();
+                cargarAlianzas();
+            }
+        }
+
+        async function cargarReporteEstudiantes() {
+            const res = await fetch(`${API_URL}/student-activity`);
+            const data = await res.json();
+            const tbody = document.querySelector('#estudiantes-table tbody');
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                tbody.innerHTML += `<tr><td>${row.email}</td><td>${row.universidad_consultada}</td><td>${row.total_visitas}</td></tr>`;
+            });
+        }
+
         async function cargarUsuarios() {
             const res = await fetch(`${API_URL}/usuarios`);
             usuariosData = await res.json();
