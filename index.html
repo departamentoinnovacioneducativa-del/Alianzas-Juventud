@@ -42,6 +42,7 @@
         .header-alianza h1 { margin: 0; font-size: 2.2em; text-transform: uppercase; text-shadow: 1px 1px 2px rgba(255,255,255,0.7); }
         
         .info-box { background: rgba(255,255,255,0.85); padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); word-break: break-word; }
+        .info-box div { white-space: pre-wrap; line-height: 1.5; } /* <-- ESTA REGLA MANTIENE LOS SALTOS DE LÍNEA Y MEJORA LA LECTURA */
         .info-box strong { color: #002366; display: block; margin-bottom: 5px; font-size: 1.1em; }
         .info-box a { word-break: break-all; overflow-wrap: break-word; }
 
@@ -66,7 +67,7 @@
     </div>
 
     <script>
-        const APP_VERSION = '1.7.0';
+        const APP_VERSION = '1.8.0';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
             caches.keys().then(names => { for (let name of names) caches.delete(name); });
             localStorage.setItem('app_version', APP_VERSION); location.reload();
@@ -135,7 +136,7 @@
             <select id="select-alianzas-visor" onchange="mostrarAlianzaVisual()" style="flex: 1;"></select>
             <button onclick="window.print()" class="hidden" id="btn-imprimir" style="background-color: #5bc0be; width: auto; padding: 12px 20px;">🖨️ PDF / Imprimir</button>
             <button onclick="abrirCreacionAlianza()" class="hidden" id="btn-crear-alianza" style="background-color: #27ae60; width: auto; padding: 12px 20px;">➕ Nueva Entidad</button>
-            <button onclick="abrirEdicionAlianza()" class="hidden" id="btn-editar-alianza" style="background-color: #f39c12; width: auto; padding: 12px 20px;">✏️ Editar Entidad</button>
+            <button onclick="abrirEdicionAlianza()" class="hidden" id="btn-editar-alianza" style="background-color: #f39c12; width: auto; padding: 12px 20px;">✏️️ Editar Entidad</button>
             <button onclick="borrarAlianzaActiva()" class="hidden" id="btn-eliminar-alianza" style="background-color: #d9534f; width: auto; padding: 12px 20px;">🗑️ Borrar Entidad</button>
         </div>
         
@@ -555,7 +556,7 @@
         async function borrarAlianzaActiva() {
             const id = document.getElementById('select-alianzas-visor').value;
             if (!id) return;
-            if (confirm("⚠️ ¿Estás seguro de que deseas eliminar esta entidad e información obsoleta? Esta acción es irreversible.")) {
+            if (confirm("⚠️️ ¿Estás seguro de que deseas eliminar esta entidad e información obsoleta? Esta acción es irreversible.")) {
                 await fetch(`${API_URL}/alianzas`, { method: 'DELETE', body: JSON.stringify({ id }) });
                 mostrarToast("✅ Entidad eliminada correctamente.");
                 document.getElementById('select-alianzas-visor').value = "";
