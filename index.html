@@ -39,7 +39,6 @@
         .header-alianza img { max-width: 120px; max-height: 120px; border-radius: 10px; object-fit: contain; background: white; padding: 5px; }
         .header-alianza h1 { margin: 0; font-size: 2.2em; text-transform: uppercase; text-shadow: 1px 1px 2px rgba(255,255,255,0.7); }
         
-        /* Ajuste de texto para evitar desbordamientos en enlaces largos */
         .info-box { background: rgba(255,255,255,0.85); padding: 15px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); word-break: break-word; }
         .info-box strong { color: #002366; display: block; margin-bottom: 5px; font-size: 1.1em; }
         .info-box a { word-break: break-all; overflow-wrap: break-word; }
@@ -65,7 +64,7 @@
     </div>
 
     <script>
-        const APP_VERSION = '1.4.1';
+        const APP_VERSION = '1.5.0';
         if (localStorage.getItem('app_version') !== APP_VERSION) {
             caches.keys().then(names => { for (let name of names) caches.delete(name); });
             localStorage.setItem('app_version', APP_VERSION); location.reload();
@@ -93,7 +92,6 @@
                 <p id="msgReintento" style="font-weight: bold; font-size: 0.95em; margin-top: 5px;" class="hidden"></p>
             </div>
         </div>
-
         <hr>
         <button class="btn-estudiante" onclick="mostrarLoginEstudiante()">Soy Estudiante</button>
     </div>
@@ -134,8 +132,27 @@
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <select id="select-alianzas-visor" onchange="mostrarAlianzaVisual()" style="flex: 1;"></select>
             <button onclick="window.print()" class="hidden" id="btn-imprimir" style="background-color: #5bc0be; width: auto; padding: 12px 20px;">🖨️ PDF / Imprimir</button>
+            <button onclick="abrirEdicionAlianza()" class="hidden" id="btn-editar-alianza" style="background-color: #f39c12; width: auto; padding: 12px 20px;">✏️ Editar Entidad</button>
             <button onclick="borrarAlianzaActiva()" class="hidden" id="btn-eliminar-alianza" style="background-color: #d9534f; width: auto; padding: 12px 20px;">🗑️ Borrar Entidad</button>
         </div>
+        
+        <!-- SECCIÓN DE EDICIÓN ADMIN -->
+        <div id="edit-alianza-section" class="hidden" style="margin-top: 15px; padding: 15px; border: 2px solid #f39c12; border-radius: 8px;">
+            <h3 style="color: #f39c12;">Editar Información de la Alianza</h3>
+            <form id="form-editar-alianza">
+                <input type="hidden" id="edit-id">
+                <label>1. Definición de beca-convenio</label> <textarea id="edit-def" rows="3" required></textarea>
+                <label>2. Nombre Institución</label> <input type="text" id="edit-nombre" required>
+                <label>3. Contacto</label> <input type="text" id="edit-contacto" required>
+                <label>4. Admisión</label> <textarea id="edit-admision" rows="2" required></textarea>
+                <label>5. URL proceso</label> <input type="url" id="edit-url" required>
+                <label>6. URL Logo</label> <input type="url" id="edit-logo" required>
+                <label>7. Color de fondo</label> <input type="color" id="edit-color" style="height: 50px;">
+                <button type="submit" style="background-color: #27ae60;">Guardar Cambios</button>
+                <button type="button" onclick="cerrarEdicionAlianza()" style="background-color: gray;">Cancelar</button>
+            </form>
+        </div>
+
         <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 20px;">Salir</button>
     </div>
 
@@ -180,7 +197,6 @@
                 <tbody></tbody>
             </table>
         </div>
-        <button onclick="location.reload()" style="background-color: #d9534f; margin-top: 30px;">Cerrar Sesión</button>
     </div>
 
     <!-- PLANTILLA VISUAL -->
@@ -229,7 +245,6 @@
             document.getElementById('login-estudiante-section').classList.remove('hidden');
         }
 
-        // LOGIN ESTUDIANTE
         document.getElementById('loginEstudianteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email-estudiante').value;
@@ -248,7 +263,6 @@
             }
         });
 
-        // LOGIN NORMAL
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const u = document.getElementById('username').value;
@@ -276,7 +290,6 @@
                     }
                 } else {
                     const err = document.getElementById('loginError');
-                    
                     if (data.locked || res.status === 403) {
                         err.innerHTML = "Tu cuenta está bloqueada porque ya enviaste tu información.";
                         document.getElementById('div-reintento').classList.remove('hidden');
@@ -290,34 +303,24 @@
             } catch (error) { alert("Error de conexión"); }
         });
 
-        // SOLICITAR REINTENTO CON CONTROL DE TIEMPO
         async function solicitarReintento() {
             const btn = document.getElementById('btn-reintento');
             btn.disabled = true;
             const msg = document.getElementById('msgReintento');
-            
             try {
                 const res = await fetch(`${API_URL}/solicitar-reintento`, { method: 'POST', body: JSON.stringify({ username: currentUser }) });
                 const data = await res.json();
-                
                 msg.classList.remove('hidden');
                 if (res.ok && data.success) {
-                    msg.style.color = "#27ae60";
-                    msg.textContent = data.message;
+                    msg.style.color = "#27ae60"; msg.textContent = data.message;
                 } else {
-                    msg.style.color = "#d9534f";
-                    msg.textContent = data.message || "No se pudo procesar la solicitud.";
-                    // Si el error es por límite de tiempo, el botón se queda deshabilitado para evitar spam
+                    msg.style.color = "#d9534f"; msg.textContent = data.message || "No se pudo procesar la solicitud.";
                 }
             } catch (error) {
-                msg.classList.remove('hidden');
-                msg.style.color = "#d9534f";
-                msg.textContent = "Error de conexión.";
-                btn.disabled = false;
+                msg.classList.remove('hidden'); msg.style.color = "#d9534f"; msg.textContent = "Error de conexión."; btn.disabled = false;
             }
         }
 
-        // REGISTRO
         document.getElementById('registroForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const payload = { 
@@ -358,9 +361,12 @@
             const printArea = document.getElementById('print-area');
             const btnPrint = document.getElementById('btn-imprimir');
             const btnEliminar = document.getElementById('btn-eliminar-alianza');
+            const btnEditar = document.getElementById('btn-editar-alianza');
+            cerrarEdicionAlianza(); // Cierra el form de edición si cambiamos de opción
             
             if (!id) {
-                printArea.classList.add('hidden'); btnPrint.classList.add('hidden'); btnEliminar.classList.add('hidden'); return;
+                printArea.classList.add('hidden'); btnPrint.classList.add('hidden'); 
+                btnEliminar.classList.add('hidden'); btnEditar.classList.add('hidden'); return;
             }
             const a = alianzasData.find(x => x.id == id);
             
@@ -379,15 +385,63 @@
             
             if (currentUserRole === 'admin') {
                 btnEliminar.classList.remove('hidden');
+                btnEditar.classList.remove('hidden');
             }
 
             if (currentUserRole === 'estudiante' && currentUserEmail) {
-                await fetch(`${API_URL}/track-estudiante`, {
-                    method: 'POST',
-                    body: JSON.stringify({ email: currentUserEmail, universidad: a.enlaces })
-                });
+                await fetch(`${API_URL}/track-estudiante`, { method: 'POST', body: JSON.stringify({ email: currentUserEmail, universidad: a.enlaces }) });
             }
         }
+
+        /* --- FUNCIONES DE EDICIÓN DE ALIANZA --- */
+        function abrirEdicionAlianza() {
+            const id = document.getElementById('select-alianzas-visor').value;
+            if (!id) return;
+            const a = alianzasData.find(x => x.id == id);
+            
+            // Llenar el formulario con datos actuales
+            document.getElementById('edit-id').value = a.id;
+            document.getElementById('edit-def').value = a.definicion;
+            document.getElementById('edit-nombre').value = a.enlaces;
+            document.getElementById('edit-contacto').value = a.contacto;
+            document.getElementById('edit-admision').value = a.admision;
+            document.getElementById('edit-url').value = a.url_inicio;
+            document.getElementById('edit-logo').value = a.logo_url;
+            document.getElementById('edit-color').value = a.color_fondo || '#e3f2fd';
+
+            document.getElementById('edit-alianza-section').classList.remove('hidden');
+            document.getElementById('print-area').classList.add('hidden'); // Ocultar visor temporalmente
+        }
+
+        function cerrarEdicionAlianza() {
+            document.getElementById('edit-alianza-section').classList.add('hidden');
+            if (document.getElementById('select-alianzas-visor').value) {
+                document.getElementById('print-area').classList.remove('hidden'); // Restaurar visor
+            }
+        }
+
+        document.getElementById('form-editar-alianza').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = { 
+                id: document.getElementById('edit-id').value,
+                definicion: document.getElementById('edit-def').value, 
+                enlaces: document.getElementById('edit-nombre').value, 
+                contacto: document.getElementById('edit-contacto').value, 
+                admision: document.getElementById('edit-admision').value, 
+                url_inicio: document.getElementById('edit-url').value,
+                logo_url: document.getElementById('edit-logo').value,
+                color_fondo: document.getElementById('edit-color').value
+            };
+            
+            await fetch(`${API_URL}/alianzas`, { method: 'PUT', body: JSON.stringify(payload) });
+            mostrarToast("✅ ¡Alianza actualizada correctamente!");
+            cerrarEdicionAlianza();
+            
+            // Recargar datos para que se vea el cambio en el select y el visor
+            await cargarAlianzas();
+            document.getElementById('select-alianzas-visor').value = payload.id;
+            mostrarAlianzaVisual();
+        });
 
         async function borrarAlianzaActiva() {
             const id = document.getElementById('select-alianzas-visor').value;
